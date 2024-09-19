@@ -20,7 +20,7 @@ jobs:
       - name: Set up Python version
         uses: actions/setup-python@v1
         with:
-          python-version: '3.11'
+          python-version: '3.9'
 
       - name: Create and start virtual environment
         run: |
@@ -64,4 +64,4 @@ jobs:
         with:
           app-name: 'digitalomr'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_29386C8D928E4F9D84B1176A804E4B49 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_182FC09CD6BD47CFB31D251A3B71927C }}
