@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>OMR Sheet Setup</title>
+</head>
+<body>
+    <div class="header">Digital OMR Sheet</div>
+    <div class="container">
+        <h1>Setup</h1>
+        <form method="post">
+            <label>Topic Name:</label>
+            <input type="text" name="topic_name" required>
+        
+            <label>Number of Questions:</label>
+            <input type="number" name="questions" required>
+            
+            <label>Number of Options per Question:</label>
+            <input type="number" name="options" required>
+        
+            <button type="submit">Generate OMR sheet</button> 
+        </form>
+        
+    </div>
+</body>
+</html>

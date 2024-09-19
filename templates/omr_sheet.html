@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>OMR Sheet</title>
+    <script>
+        // Initialize the timer
+        let startTime = Date.now();
+        setInterval(() => {
+            const now = Date.now();
+            const elapsedTime = now - startTime;
+            const minutes = Math.floor(elapsedTime / 60000);
+            const seconds = Math.floor((elapsedTime % 60000) / 1000);
+            document.getElementById('timer').textContent = `Time Taken: ${minutes}m ${seconds}s`;
+        }, 1000);
+    </script>
+</head>
+<body>
+<div class="header">
+    Digital OMR Sheet
+    <div class="timer-box">
+        <div class="timer" id="timer">Time Taken: 0m 0s</div>
+    </div>
+</div>
+
+    <div class="container">
+        <h1>Mark Your Answers</h1>
+
+        <!-- Header for options A, B, C, D... -->
+        <div class="options-header options-row">
+            {% for j in range(1, option_count + 1) %}
+                <div>{{ chr(64 + j) }}</div>
+            {% endfor %}
+        </div>
+
+        <!-- Questions with only radio buttons below options header -->
+        <!-- Questions -->
+        <form method="post">
+            {% for i in range(1, question_count + 1) %}
+                <div class="question-container">
+                    <label>Q{{ i }}:</label>
+                    <div class="radio-buttons options-row">
+                        {% for j in range(1, option_count + 1) %}
+                            <div>
+                                <input type="radio" name="q{{ i }}" value="{{ chr(64 + j) }}">
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+            <button type="submit">Submit Answers</button>
+        </form>
+    </div>
+</body>
+</html>

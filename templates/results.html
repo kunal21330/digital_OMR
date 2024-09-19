@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Results</title>
+</head>
+<body>
+    <div class="header">Results</div>
+    <div class="container result-container">
+        <h1>Results Summary</h1>
+        <div class="result-stats">
+            <p>Total Questions: {{ question_count }}</p>
+            <p>Correct Answers: {{ correct_count }}</p>
+            <p>Wrong Answers: {{ wrong_count }}</p>
+            <p>Unattempted Questions: {{ unattempted_count }}</p>
+            <p>Accuracy: {{ accuracy }}%</p>
+            <div class="statistics">
+                <p>Total Time Taken: {{ minutes }}m {{ seconds }}s</p>
+            </div>
+            <a href="{{ url_for('download_results') }}" class="download-button">Download Results</a>
+
+        </div>
+    </div>
+</body> 
+</html>
