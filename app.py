@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory,send_file
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, send_file, session
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
@@ -8,56 +8,56 @@ import os
 import io
 
 app = Flask(__name__)
-
-# Global variables to hold OMR data
-topic_name = ""
-question_count = 0
-option_count = 0
-user_answers = []
-correct_answers = []
-start_time = 0
+app.secret_key = 'your_secret_key'  # Replace with a secure secret key
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
-    global topic_name, question_count, option_count
     if request.method == 'POST':
-        topic_name = request.form['topic_name']
-        question_count = int(request.form['questions'])
-        option_count = int(request.form['options'])
+        session['topic_name'] = request.form['topic_name']
+        session['question_count'] = int(request.form['questions'])
+        session['option_count'] = int(request.form['options'])
         return redirect(url_for('omr_sheet'))
     return render_template('home.html')
 
-
 @app.route('/omr_sheet', methods=['GET', 'POST'])
 def omr_sheet():
-    global start_time
-    if request.method == 'POST':
-        global user_answers, option_count
-        user_answers = [request.form.get(f'q{i}', '') for i in range(1, question_count + 1)]
-        total_time_taken = time.time() - start_time
-        return redirect(url_for('correct_answers'))
+    if 'start_time' not in session:
+        session['start_time'] = time.time()  # Start the timer when the OMR sheet is loaded
     
-    start_time = time.time()  # Start the timer when the OMR sheet is loaded
-    return render_template('omr_sheet.html', question_count=question_count, option_count=option_count, chr=chr)
+    if request.method == 'POST':
+        question_count = session.get('question_count', 0)
+        session['user_answers'] = [request.form.get(f'q{i}', '') for i in range(1, question_count + 1)]
+        return redirect(url_for('correct_answers'))
+
+    return render_template('omr_sheet.html', 
+                           question_count=session.get('question_count', 0),
+                           option_count=session.get('option_count', 0),
+                           chr=chr)
 
 @app.route('/correct_answers', methods=['GET', 'POST'])
 def correct_answers():
     if request.method == 'POST':
-        global correct_answers
-        correct_answers = [request.form.get(f'c{i}', '') for i in range(1, question_count + 1)]
+        question_count = session.get('question_count', 0)
+        session['correct_answers'] = [request.form.get(f'c{i}', '') for i in range(1, question_count + 1)]
         return redirect(url_for('results'))
-    return render_template('correct_answers.html', question_count=question_count, option_count=option_count, chr=chr)
+    return render_template('correct_answers.html', 
+                           question_count=session.get('question_count', 0),
+                           option_count=session.get('option_count', 0),
+                           chr=chr)
 
 @app.route('/results')
 def results():
-    global user_answers, correct_answers, question_count, start_time
+    question_count = session.get('question_count', 0)
+    user_answers = session.get('user_answers', [])
+    correct_answers = session.get('correct_answers', [])
+    
     correct_count = sum(1 for u, c in zip(user_answers, correct_answers) if u == c)
     wrong_count = sum(1 for u, c in zip(user_answers, correct_answers) if u and u != c)
     unattempted_count = sum(1 for u in user_answers if not u)
     accuracy = (correct_count / question_count) * 100 if question_count > 0 else 0
 
     # Convert total time taken to minutes and seconds
-    total_time_taken = time.time() - start_time
+    total_time_taken = time.time() - session.get('start_time', 0)
     minutes = int(total_time_taken // 60)
     seconds = int(total_time_taken % 60)
 
@@ -74,9 +74,14 @@ def results():
 
 @app.route('/download_results')
 def download_results():
-    global topic_name, user_answers, correct_answers, question_count, start_time
+    topic_name = session.get('topic_name', 'results')
+    user_answers = session.get('user_answers', [])
+    correct_answers = session.get('correct_answers', [])
+    question_count = session.get('question_count', 0)
+
     csv_filename = f"{topic_name.replace(' ', '_')}_results.csv"
     csv_filepath = os.path.join(app.root_path, csv_filename)
+    
     with open(csv_filepath, 'w', newline='') as csvfile:
         fieldnames = ['Question', 'Your Answer', 'Correct Answer']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -84,19 +89,23 @@ def download_results():
         for i in range(question_count):
             writer.writerow({
                 'Question': i + 1,
-                'Your Answer': user_answers[i],
-                'Correct Answer': correct_answers[i]
+                'Your Answer': user_answers[i] if i < len(user_answers) else "",
+                'Correct Answer': correct_answers[i] if i < len(correct_answers) else ""
             })
     
     return send_from_directory(app.root_path, csv_filename, as_attachment=True)
+
 @app.route('/download_pdf')
 def download_pdf():
-    global topic_name, user_answers, correct_answers, question_count, start_time
+    topic_name = session.get('topic_name', 'results')
+    user_answers = session.get('user_answers', [])
+    correct_answers = session.get('correct_answers', [])
+    question_count = session.get('question_count', 0)
     pdf_filename = f"{topic_name.replace(' ', '_')}_results.pdf"
     pdf_buffer = io.BytesIO()
 
     # Calculate the time taken
-    total_time_taken = time.time() - start_time
+    total_time_taken = time.time() - session.get('start_time', 0)
     minutes = int(total_time_taken // 60)
     seconds = int(total_time_taken % 60)
 
@@ -131,8 +140,8 @@ def download_pdf():
     p.setFont("Helvetica", 11)
     y -= 20
     for i in range(question_count):
-        user_answer = user_answers[i] if i < len(user_answers) and user_answers[i] else "No answer"
-        correct_answer = correct_answers[i] if i < len(correct_answers) and correct_answers[i] else "No answer"
+        user_answer = user_answers[i] if i < len(user_answers) else "No answer"
+        correct_answer = correct_answers[i] if i < len(correct_answers) else "No answer"
         correct = "Yes" if user_answer == correct_answer else "No"
         data = [f"Q{i + 1}", user_answer, correct_answer, correct]
         for j, item in enumerate(data):
@@ -168,5 +177,6 @@ def download_pdf():
 
     # Send the PDF as a file attachment
     return send_file(pdf_buffer, as_attachment=True, download_name=pdf_filename, mimetype='application/pdf')
+
 if __name__ == '__main__':
     app.run(debug=True)
